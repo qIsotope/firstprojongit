@@ -130,6 +130,7 @@ cart.addEventListener('click', (event) => {
 	if (event.target.classList.contains('fa-trash')) {
 		if (+event.target.parentElement.previousElementSibling.children[2].children[0].textContent > 1) {
 			event.target.parentElement.previousElementSibling.children[2].children[0].textContent = +event.target.parentElement.previousElementSibling.children[2].children[0].textContent - 1
+			resultItems()
 		}
 		else {
 			event.target.closest('.cart-item').remove()
@@ -192,7 +193,7 @@ mainExplore.addEventListener('click', (event) => {
 	event.preventDefault()
 	window.scrollTo({
 		left: 0,
-		top: store.offsetTop - 25,
+		top: store.offsetTop - 68,
 		behavior: "smooth"
 	});
 })
