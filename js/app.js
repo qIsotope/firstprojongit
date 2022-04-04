@@ -1,3 +1,5 @@
+
+
 //  filter items 
 let filterBtns = document.getElementsByClassName('filter-btn')
 let storeItems = document.getElementsByClassName('store-item')
@@ -57,6 +59,8 @@ btnClose.onclick = function closeModal() {
 	lightBox.classList.remove('show')
 }
 
+
+
 // add item to the basket
 
 let cards = document.querySelectorAll('.card')
@@ -64,10 +68,13 @@ let basket = document.getElementById('cart-info')
 let cart = document.querySelector('.cart')
 let addItemToBasket = document.querySelector('.store-item-icon')
 let cartTotal = document.querySelector('.cart-total-container')
-basket.addEventListener('click', () => {
-	resultItems()
-	cart.classList.toggle('show-cart')
-})
+let isExist = document.getElementsByClassName('redItem')
+
+let newITEM = document.createElement('div')
+newITEM.classList.add('redItem')
+document.querySelector(".cart-total-container").before(newITEM);
+
+
 for (let card of cards) {
 	card.addEventListener('click', (event) => {
 
@@ -87,11 +94,12 @@ for (let card of cards) {
 			if (partSimilarImgSrc == partPath) {
 				similar[i].children[1].children[2].children[0].textContent = +similar[i].children[1].children[2].children[0].textContent + 1
 				resultItems()
+				updateStorage()
 				return
 			}
 		}
 
-		cartTotal.insertAdjacentHTML('beforebegin', `<div class="cart-item d-flex justify-content-between text-capitalize my-3">
+		newITEM.innerHTML += `<div class="cart-item d-flex justify-content-between text-capitalize my-3">
 						<img src="${item.img}" class="img-fluid rounded-circle" id="item-img" alt="">
 						<div class="item-text">
 							<p id="cart-item-title" class="font-weight-bold mb-0">${name}</p>
@@ -100,10 +108,19 @@ for (let card of cards) {
 						<a href="#" id='cart-item-remove' class="cart-item-remove">
 							<i class="fas fa-trash"></i>
 						</a>
-					</div>`)
+					</div>`;
 		resultItems()
+		updateStorage()
 	})
 }
+
+// open/close basketlist
+
+basket.addEventListener('click', () => {
+	resultItems()
+	cart.classList.toggle('show-cart')
+	updateStorage()
+})
 
 // calculate items and price
 
@@ -131,23 +148,36 @@ cart.addEventListener('click', (event) => {
 		if (+event.target.parentElement.previousElementSibling.children[2].children[0].textContent > 1) {
 			event.target.parentElement.previousElementSibling.children[2].children[0].textContent = +event.target.parentElement.previousElementSibling.children[2].children[0].textContent - 1
 			resultItems()
+			updateStorage()
 		}
 		else {
 			event.target.closest('.cart-item').remove()
 			resultItems()
+			updateStorage()
+		}
+		let abra = document.querySelector('.redItem')
+		if (abra.children.length == 0) {
+			console.log('0 items')
+			localStorage.removeItem('todos')
 		}
 	}
 })
-let clearCart = document.getElementById('clear-cart')
 
 // delete all items from the basket
 
+let clearCart = document.getElementById('clear-cart')
 clearCart.addEventListener('click', (event) => {
 	event.preventDefault()
-	while (cartTotal.previousElementSibling) {
-		cartTotal.previousElementSibling.remove()
+	let newDivs = document.getElementsByClassName('cart-item')
+	console.log(newDivs)
+	for (let i = 0; i < newDivs.length; i++) {
+		while (newDivs.length !== 0) {
+			newDivs[i].remove()
+		}
 	}
 	resultItems()
+	localStorage.removeItem('todos')
+
 })
 
 // navigation scroll onclick 
@@ -206,3 +236,33 @@ logoHome.addEventListener('click', (event) => {
 		behavior: "smooth"
 	});
 })
+
+//creating a localStorage with info about items and info about status of basket
+
+const updateStorage = () => {
+	let cartClasslist = cart.classList
+	localStorage.setItem('classlists', cartClasslist.value)
+	let parent = document.querySelector('.redItem')
+	let html = parent.innerHTML.trim()
+	console.log(cart.classList.value)
+	if (html.length) {
+		localStorage.setItem('todos', html)
+	}
+	else {
+		localStorage.removeItem('todos')
+	}
+}
+
+// getting finished todo items from the local storage
+
+const initialState = () => {
+	if (localStorage.getItem('todos') !== null) {
+		document.querySelector('.redItem').innerHTML = localStorage.getItem('todos')
+		resultItems()
+	}
+	cart.classList = localStorage.getItem('classlists')
+
+}
+initialState()
+
+
