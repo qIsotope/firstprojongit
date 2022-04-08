@@ -1,5 +1,5 @@
 
-
+let mailArray = [];
 //  filter items 
 let filterBtns = document.getElementsByClassName('filter-btn')
 let storeItems = document.getElementsByClassName('store-item')
@@ -74,10 +74,11 @@ let newITEM = document.createElement('div')
 newITEM.classList.add('redItem')
 document.querySelector(".cart-total-container").before(newITEM);
 
-
+let mailObject = {};
 for (let card of cards) {
 	card.addEventListener('click', (event) => {
-
+		checkout.classList.remove('disabled')
+		let modalList = document.querySelector('.modal-list')
 		let name = event.target.parentElement.parentElement.nextElementSibling.children[0].children[0].textContent
 		let price = '$ ' + event.target.parentElement.parentElement.nextElementSibling.children[0].children[1].children[0].textContent
 		let fullPath = event.target.parentElement.previousElementSibling.src;
@@ -87,15 +88,28 @@ for (let card of cards) {
 		let partPath = fullPath.slice(pos);
 		const item = {};
 		item.img = `img-cart${partPath}`;
+		mailObject = {
+			imgPath: item.img.slice(8),
+			price: price
+		}
+		mailArray.push(mailObject)
 		for (let i = 0; i < similar.length; i++) {
-			let similarImgSrc = similar[i].children[0].src
-			let pos = similarImgSrc.indexOf('img') + 8
-			let partSimilarImgSrc = similarImgSrc.slice(pos)
-			if (partSimilarImgSrc == partPath) {
-				similar[i].children[1].children[2].children[0].textContent = +similar[i].children[1].children[2].children[0].textContent + 1
-				resultItems()
-				updateStorage()
-				return
+			let modalImages = document.querySelectorAll('.modal-image')
+			for (let imgmod of modalImages) {
+				let modalPos = imgmod.src.indexOf('img') + 8
+				let modalSrc = imgmod.src.slice(modalPos)
+				let similarImgSrc = similar[i].children[0].src
+				let pos = similarImgSrc.indexOf('img') + 8
+				let partSimilarImgSrc = similarImgSrc.slice(pos)
+				if (partSimilarImgSrc == partPath && partPath == modalSrc) {
+					imgmod.parentElement.nextElementSibling.children[1].textContent = +imgmod.parentElement.nextElementSibling.children[1].textContent + 1;
+					similar[i].children[1].children[2].children[0].textContent = +similar[i].children[1].children[2].children[0].textContent + 1
+					imgmod.parentElement.nextElementSibling.children[2].children[0].textContent = '$ ' + (similar[i].children[1].children[2].children[0].textContent * event.target.parentElement.parentElement.nextElementSibling.children[0].children[1].children[0].textContent)
+					resultItems()
+					updateStorage()
+					return
+				}
+
 			}
 		}
 
@@ -109,6 +123,24 @@ for (let card of cards) {
 							<i class="fas fa-trash"></i>
 						</a>
 					</div>`;
+
+
+		// add item to modal list
+		modalList.insertAdjacentHTML('beforeend', `
+		<div class="modal-item">
+		<div class="modal-img">
+			<img class="modal-image" src="${item.img}" alt="">
+		</div>
+		<div class="modal-info">
+			<div class="item-name">${name}</div>
+			<div class="item-number">1</div>
+			<div class="price-info">
+				<span class="item-price">${price}</span>
+				</span>
+			</div>
+		</div>
+	</div>`)
+
 		resultItems()
 		updateStorage()
 	})
@@ -125,7 +157,6 @@ basket.addEventListener('click', () => {
 // calculate items and price
 
 function resultItems() {
-
 	let similar = document.getElementsByClassName('cart-item')
 	let result = 0;
 	let items = 0;
@@ -138,29 +169,73 @@ function resultItems() {
 	cart.lastChild.previousElementSibling.previousElementSibling.children[1].children[0].textContent = result.toFixed(2)
 	basket.children[1].children[1].textContent = result.toFixed(2)
 	basket.children[1].children[0].textContent = items
+	document.querySelector('.modal-number').textContent = `Items: ${items}`
+	document.querySelector('.modal-allprice').textContent = `$ ${result.toFixed(2)}`
+
 }
 
 // delete single item from the basket
 
 cart.addEventListener('click', (event) => {
 	event.preventDefault()
+	let modalImages = document.querySelectorAll('.modal-image')
 	if (event.target.classList.contains('fa-trash')) {
+
+
 		if (+event.target.parentElement.previousElementSibling.children[2].children[0].textContent > 1) {
 			event.target.parentElement.previousElementSibling.children[2].children[0].textContent = +event.target.parentElement.previousElementSibling.children[2].children[0].textContent - 1
+			for (let imgmod of modalImages) {
+				let modalPos = imgmod.src.indexOf('img') + 8
+				let modalSrc = imgmod.src.slice(modalPos)
+				let basketSrc = event.target.parentElement.previousElementSibling.previousElementSibling.src.slice(modalPos)
+				if (modalSrc == basketSrc) {
+					imgmod.parentElement.nextElementSibling.children[1].textContent = +imgmod.parentElement.nextElementSibling.children[1].textContent - 1;
+					resultItems()
+					imgmod.parentElement.nextElementSibling.children[2].children[0].textContent = '$ ' + (imgmod.parentElement.nextElementSibling.children[1].textContent * event.target.parentElement.previousElementSibling.children[1].textContent.slice(1))
+					updateStorage()
+				}
+			}
 			resultItems()
 			updateStorage()
 		}
 		else {
+			if (document.querySelectorAll('.cart-item').length == 1) {
+				checkout.classList.add('disabled')
+			}
 			event.target.closest('.cart-item').remove()
+			for (let imgmod of modalImages) {
+				let modalPos = imgmod.src.indexOf('img') + 8
+				let modalSrc = imgmod.src.slice(modalPos)
+				let basketSrc = event.target.parentElement.previousElementSibling.previousElementSibling.src.slice(modalPos)
+				if (modalSrc == basketSrc) {
+					imgmod.parentElement.parentElement.remove()
+				}
+			}
 			resultItems()
 			updateStorage()
 		}
 		let abra = document.querySelector('.redItem')
 		if (abra.children.length == 0) {
-			console.log('0 items')
 			localStorage.removeItem('todos')
+			localStorage.removeItem('modal')
+		}
+
+
+		for (let i = 0; i < mailArray.length; i++) {
+			for (let imgmod of modalImages) {
+				let modalPos = imgmod.src.indexOf('img') + 8
+				if (mailArray[i].imgPath == event.target.parentElement.previousElementSibling.previousElementSibling.src.slice(modalPos)) {
+					let myIndex = mailArray.indexOf(mailArray[i])
+					if (myIndex !== -1) {
+						mailArray.splice(myIndex, 1);
+					}
+					return
+				}
+			}
 		}
 	}
+
+
 })
 
 // delete all items from the basket
@@ -169,15 +244,17 @@ let clearCart = document.getElementById('clear-cart')
 clearCart.addEventListener('click', (event) => {
 	event.preventDefault()
 	let newDivs = document.getElementsByClassName('cart-item')
-	console.log(newDivs)
 	for (let i = 0; i < newDivs.length; i++) {
 		while (newDivs.length !== 0) {
 			newDivs[i].remove()
 		}
 	}
+	let modalItems = document.querySelectorAll('.modal-item').forEach(item => item.remove())
+	mailArray = [];
 	resultItems()
 	localStorage.removeItem('todos')
-
+	localStorage.removeItem('modal')
+	checkout.classList.add('disabled')
 })
 
 // navigation scroll onclick 
@@ -243,8 +320,13 @@ const updateStorage = () => {
 	let cartClasslist = cart.classList
 	localStorage.setItem('classlists', cartClasslist.value)
 	let parent = document.querySelector('.redItem')
+	let modalList = document.querySelector('.modal-list')
+	let modalhtml = modalList.innerHTML.trim()
+	if (modalhtml.length) {
+		localStorage.setItem('modal', modalhtml)
+	}
+	else { localStorage.removeItem('modal') }
 	let html = parent.innerHTML.trim()
-	console.log(cart.classList.value)
 	if (html.length) {
 		localStorage.setItem('todos', html)
 	}
@@ -260,9 +342,79 @@ const initialState = () => {
 		document.querySelector('.redItem').innerHTML = localStorage.getItem('todos')
 		resultItems()
 	}
-	cart.classList = localStorage.getItem('classlists')
+	if (localStorage.getItem('modal') !== null) {
+		document.querySelector('.modal-list').innerHTML = localStorage.getItem('modal')
+	}
+	if (localStorage.getItem('classlists') === null) {
+		cart.classList = 'cart'
+	}
+	else { cart.classList = localStorage.getItem('classlists') }
 
 }
 initialState()
 
+// Validate a number phone input
 
+let modalButton = document.querySelector('.modal-link')
+let inputPhone = document.getElementById('phone')
+let reg = /\([3][8][0]\)\s\d{2}\-\d{4}\-\d{3}/gm
+let optionalSpan = document.querySelector('.optional-span')
+let modalForm = document.querySelector('#form')
+let succesOrder = document.querySelector('.succes-order')
+modalForm.addEventListener('submit', (event) => {
+
+	if (reg.test(inputPhone.value)) {
+		console.log(inputPhone.value, '2')
+		let coverDiv = document.querySelector('.jquery-modal')
+		event.preventDefault()
+		sendForm()
+		succesOrder.classList.remove('closemodal')
+		setTimeout(() => {
+			succesOrder.classList.add('closemodal')
+			coverDiv.style.display = 'none'
+			document.body.style.overflow = 'auto'
+			document.querySelectorAll('.modal-item').forEach((item) => item.remove())
+			document.querySelectorAll('.cart-item').forEach((item) => item.remove())
+			resultItems()
+		}, 1000);
+		localStorage.removeItem('todos')
+		localStorage.removeItem('modal')
+
+	}
+	else {
+		console.log(inputPhone.value, '1')
+		event.preventDefault()
+		optionalSpan.classList.add('displaynone')
+		setTimeout(() => {
+			optionalSpan.classList.remove('displaynone')
+		}, 1000);
+	}
+})
+
+function sendForm() {
+	let formData = new FormData(modalForm)
+	formData.append('Products', JSON.stringify(mailArray));
+
+	let xhr = new XMLHttpRequest();
+
+	xhr.onreadystatechange = function () {
+		if (xhr.readyState === 4) {
+			if (xhr.status === 200) {
+				console.log('Отправлено');
+			}
+		}
+		else console.log('error')
+	}
+
+	xhr.open('POST', 'mail.php', true);
+	xhr.send(formData);
+
+	modalForm.reset();
+}
+
+function disable() {
+	if (document.querySelectorAll('.cart-item').length !== 0) {
+		checkout.classList.remove('disabled')
+	}
+}
+disable()
